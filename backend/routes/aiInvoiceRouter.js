@@ -2,7 +2,9 @@ import express from 'express';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { model } from 'mongoose';
-import { raw } from 'body-parser';
+import bodyParser from 'body-parser';
+
+const { raw } = bodyParser;
 
 dotenv.config();
 const aiInvoiceRouter = express.Router();
@@ -13,13 +15,13 @@ if(!API_KEY){
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
-// models to try
+
 const MODEL_CANDIDATES = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-2.0",
 ];
-// in the prompt you vcan provide the se details and will fill those automatickly
+
 function buildInvoicePrompt(promptText) {
   const invoiceTemplate = {
     invoiceNumber: `INV-${Math.floor(Math.random() * 9000) + 1000}`,
@@ -52,7 +54,7 @@ ${promptText}
 Output: valid JSON only (no surrounding code fences, no commentary).
 `;
 }
-// it will try a few common possibilities in the order
+
 async function tryGenerateWithModel(modelName, prompt) {
   const response = await ai.models.generateContent({
     model: modelName,
@@ -69,13 +71,11 @@ async function tryGenerateWithModel(modelName, prompt) {
       Array.isArray(response.output[0].content) &&
       response.output[0].content[0] &&
       response.output[0].content[0].text) ||
-    // alternate: response?.outputs?.[0]?.text
     (response &&
       response.outputs &&
       Array.isArray(response.outputs) &&
       response.outputs[0] &&
       (response.outputs[0].text || response.outputs[0].content)) ||
-    // fallback: JSON-stringify the whole response (so we at least have something)
     null;
 
   if (!text && response && Array.isArray(response.outputs)) {
@@ -125,8 +125,7 @@ aiInvoiceRouter.post('/generte', async (req, res)=>{
      }
     const fullPrompt = buildInvoicePrompt(prompt);
     
-    
-      let lastErr = null;
+    let lastErr = null;
     let lastText = null;
     let usedModel = null;
 
@@ -177,7 +176,7 @@ aiInvoiceRouter.post('/generte', async (req, res)=>{
     data = JSON.parse(jsonText);
   } catch (parseErr) {
     console.error("Failed to parse JSON from AI response:", parseErr,{
-   model: userModel,
+   model: usedModel,
    jsonText
     }
      );
