@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
-import { isLowercase } from "validator";
+import validator from "validator";
+
+const { isLowercase } = validator;
 
 const businessProfileSchema = new mongoose.Schema({
     owner: {type: String, required: true, index: true},
@@ -17,13 +19,13 @@ const businessProfileSchema = new mongoose.Schema({
     signatureUrl: {type: String, required: false, default:null},
 
 
- signatuOwnerName: {type: String, required: false, default:""},
- signatuOwnerTitle:{ required: false, default:""},
+    signatuOwnerName: {type: String, required: false, default:""},
+    signatuOwnerTitle:{ type: String, required: false, default:""},
 
-defaultTaxPercent: {type: Number , required:false, default: 18},
+    defaultTaxPercent: {type: Number , required:false, default: 18},
 
 },{
-    timestamps:truue
+    timestamps:true
 });
 
 const BusinessProfile = mongoose.models.BusinessProfile || mongoose.model("BusinessProfile", businessProfileSchema);
