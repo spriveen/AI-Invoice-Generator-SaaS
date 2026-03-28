@@ -218,11 +218,45 @@ const Hero = () => {
                     <span className={heroStyles.totalValue}>₹23,740</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-        </div>
+                <div className={heroStyles.actionButtons}>
+                  <button className={heroStyles.previewButton}>
+                     <span className={heroStyles.previewButtonText}>
+                         Preview
+                     </span>
+                  </button>
+                  <button className={heroStyles.sendButton}>
+                    <span className={heroStyles.sendButtonText}>
+                       Send Invoice
+                    </span> 
+                  </button>
+                </div>
+              </div>
+
+              <div className={heroStyles.aiIndicator}>
+                <div className={heroStyles.aiIndicatorContent}>
+                    <div className={heroStyles.aiIndicatorDot}></div>
+                    <span>AI parsed from:</span>
+                    <span className={heroStyles.aiIndicatorText}>
+                      "Invoice for web design - ₹ 15,000"
+                    </span>
+                </div>
+              </div>
+              <div className={heroStyles.cornerAccent1}></div>
+              <div className={heroStyles.cornerAccent2}></div>
+            </div>
+            <div className={heroStyles.cardBackground}></div>
+          </div>
+          </div>
+          
+          <div className={heroStyles.scrollIndicator}>
+           <div className={heroStyles.scrollContainer}>
+            <span className={heroStyles.scrollText}>Scroll to explore</span>
+            <div className={heroStyles.scrollBar}>
+              <div className={heroStyles.scrollDot}></div>
+            </div>
+           </div>
+          </div>
       </div>
     </section>
   );
