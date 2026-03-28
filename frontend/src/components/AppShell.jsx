@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'; // ✅ added useEffect
 import { appShellStyles } from '../assets/dummyStyles';
 import logo from '../assets/logo.png';
 import { useClerk, useUser } from '@clerk/clerk-react';
-import { useNavigate, Link, NavLink } from 'react-router-dom';
+import { useNavigate, Link, NavLink, Outlet } from 'react-router-dom';
 
 const AppShell = () => {
   const navigate = useNavigate();
@@ -418,10 +418,17 @@ const AppShell = () => {
            {initials()}
            <div className={appShellStyles.userAvatarBorder} />
           </div>
+          <div className={appShellStyles.userStatus}></div>
           </div>
           </div>
             </div>
           </header>
+
+          <main className={appShellStyles.main}>
+           <div className={appShellStyles.mainContainer}>
+             <Outlet />
+           </div>
+          </main>
         </div>
       </div>
     </div>
