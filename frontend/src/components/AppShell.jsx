@@ -392,8 +392,34 @@ const AppShell = () => {
                       {firstName()}
                     </span>
                   </h2>
+                  <p className={appShellStyles.welcomeSubtitle}>
+                      Ready to create invoice
+                  </p>
                 </div>
               </div>
+            </div>
+            
+            <div className={appShellStyles.headerActions}>
+          <button onClick={()=> navigate("/app/create-invoice")}
+            className={appShellStyles.ctaButton}>
+        <CreateIcon className={appShellStyles.ctaIcon}/>
+         <span className='hidden xs:inline'>Create Invoice</span>
+         <span className='xs:hidden'>Create</span>
+          </button>
+
+          <div className={appShellStyles.userSectionDesktop}>
+           <div className={appShellStyles.userInfo}>
+            <div className={appShellStyles.userName}>{displayName}</div>
+            <div className={appShellStyles.userEmail}>{user?.email}</div>
+           </div>
+
+          <div className={appShellStyles.userAvatarContainer}>
+          <div className={appShellStyles.userAvatar}>
+           {initials()}
+           <div className={appShellStyles.userAvatarBorder} />
+          </div>
+          </div>
+          </div>
             </div>
           </header>
         </div>
