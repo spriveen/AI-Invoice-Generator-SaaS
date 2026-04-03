@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 
 const StatusIcons = {
   paid: ({ className = "w-3 h-3" }) => (
@@ -52,11 +52,14 @@ const StatusIcons = {
   ),
 };
 
+const StatusBadge = ({
+  status = "",
+  size = "default",
+  showIcon = true,
+}) => {
+  const s = (status || "").toLowerCase();
 
-const StatusBadge = ({ status = "", size = "deafult", showIcon = true}) => {
-const s = (status || "").toLowerCase();
-
- const statusConfig = {
+  const statusConfig = {
     paid: {
       bg: "bg-emerald-50/80 backdrop-blur-sm",
       text: "text-emerald-700",
@@ -95,7 +98,7 @@ const s = (status || "").toLowerCase();
   };
 
   const config = statusConfig[s] || statusConfig.default;
-  const IconComponensts = StatusIcons[config.icon] || StatusIcons.draft;
+  const IconComponent = StatusIcons[config.icon] || StatusIcons.draft;
 
   const sizeClasses = {
     small: "px-2 py-1 text-xs gap-1.5",
@@ -104,49 +107,52 @@ const s = (status || "").toLowerCase();
   };
 
   return (
-    <div className={`inline-flex items-center ${sizeClasses[size]} rounded-full font-medium
-    ${config.bg} ${config.text} border ${config.border} transition-all duration-300
-    ease-out hover:scale-105 hover:shadow-sm group relative overflow-hidden`}>
-        <div className={`absolute inset-0 bg-linear-to-r ${config.gradient} opacity-0
+    <div
+      className={`inline-flex items-center ${
+        sizeClasses[size] || sizeClasses.default
+      } rounded-full font-medium
+      ${config.bg} ${config.text} border ${config.border} transition-all duration-300
+      ease-out hover:scale-105 hover:shadow-sm group relative overflow-hidden`}
+    >
+      <div
+        className={`absolute inset-0 bg-gradient-to-r ${config.gradient} opacity-0
         group-hover:opacity-5 transition-opacity duration-300`}
-        ></div>
-        {showIcon && (
-           <div className='realative z-10 flex items-center'>
-            <IconComponent className="w-3 h-3" />
-           </div> 
-        )}
-      
-      <span className='relative z-10 font-semibold tracking-wide first-letter:uppercase'>
-     {s === "default" ? status : s}
+      />
+
+      {showIcon && (
+        <div className="relative z-10 flex items-center">
+          <IconComponent className="w-3 h-3" />
+        </div>
+      )}
+
+      <span className="relative z-10 font-semibold tracking-wide first-letter:uppercase">
+        {status || "draft"}
       </span>
 
-      {(s=== "unpaid" || s=== "overdue") &&(
-        <div className='relative z-10'>
-            <div className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse`}
-            />
-
-            </div>
-
-        
+      {(s === "unpaid" || s === "overdue") && (
+        <div className="relative z-10">
+          <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+        </div>
       )}
     </div>
-  )
-}
-// status with count
-export function StatusWithCount({status, count, size = "default"}){
-   return (
-    <div className='inline-flex items-center gap-2 group'>
-   <StatusBadge status={status} size={size}/>
+  );
+};
 
-   {count !== undefined && (
-    <span className='text-xs text-gray-500 font-medium bg-gray-100
-    px-2 py-1 rounded-full group-hover:bg-gray-200 transition-colors duration-200'>
-     {count}
-    </span>
-   )}
+export function StatusWithCount({ status, count, size = "default" }) {
+  return (
+    <div className="inline-flex items-center gap-2 group">
+      <StatusBadge status={status} size={size} />
+
+      {count !== undefined && (
+        <span
+          className="text-xs text-gray-500 font-medium bg-gray-100
+          px-2 py-1 rounded-full group-hover:bg-gray-200 transition-colors duration-200"
+        >
+          {count}
+        </span>
+      )}
     </div>
-   ) 
+  );
 }
 
-
-export default StatusBadge
+export default StatusBadge;
