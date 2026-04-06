@@ -283,10 +283,10 @@ export default function CreateInvoice() {
       setInvoice((inv) =>
         inv
           ? {
-              ...inv,
-              [`${kind}DataUrl`]: dataUrl,
-              ...(kind === "logo" ? { logoDataUrl: dataUrl } : {}),
-            }
+            ...inv,
+            [`${kind}DataUrl`]: dataUrl,
+            ...(kind === "logo" ? { logoDataUrl: dataUrl } : {}),
+          }
           : inv
       );
     };
@@ -296,10 +296,10 @@ export default function CreateInvoice() {
     setInvoice((inv) =>
       inv
         ? {
-            ...inv,
-            [`${kind}DataUrl`]: null,
-            ...(kind === "logo" ? { logoDataUrl: null } : {}),
-          }
+          ...inv,
+          [`${kind}DataUrl`]: null,
+          ...(kind === "logo" ? { logoDataUrl: null } : {}),
+        }
         : inv
     );
   }
@@ -318,7 +318,7 @@ export default function CreateInvoice() {
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
         const res = await fetch(
-          `${API_BASE}/api/invoice?invoiceNumber=${encodeURIComponent(
+          `${API_BASE}/api/invoices?invoiceNumber=${encodeURIComponent(
             candidate
           )}`,
           { method: "GET", headers }
@@ -495,8 +495,8 @@ export default function CreateInvoice() {
           Array.isArray(invoiceFromState.items)
             ? invoiceFromState.items.slice()
             : invoiceFromState.items
-            ? [...invoiceFromState.items]
-            : buildDefaultInvoice().items
+              ? [...invoiceFromState.items]
+              : buildDefaultInvoice().items
         );
 
         return;
@@ -510,7 +510,7 @@ export default function CreateInvoice() {
           const headers = { Accept: "application/json" };
           if (token) headers["Authorization"] = `Bearer ${token}`;
 
-          const res = await fetch(`${API_BASE}/api/invoice/${id}`, {
+          const res = await fetch(`${API_BASE}/api/invoices/${id}`, {
             method: "GET",
             headers,
           });
@@ -672,8 +672,8 @@ export default function CreateInvoice() {
 
       const endpoint =
         isEditing && invoice.id
-          ? `${API_BASE}/api/invoice/${invoice.id}`
-          : `${API_BASE}/api/invoice`;
+          ? `${API_BASE}/api/invoices/${invoice.id}`
+          : `${API_BASE}/api/invoices`;
       const method = isEditing && invoice.id ? "PUT" : "POST";
 
       // try to obtain Clerk token; if present include Authorization
@@ -837,8 +837,8 @@ export default function CreateInvoice() {
             {loading
               ? "Saving..."
               : isEditing
-              ? "Update Invoice"
-              : "Create Invoice"}
+                ? "Update Invoice"
+                : "Create Invoice"}
           </button>
         </div>
       </div>
@@ -908,11 +908,10 @@ export default function CreateInvoice() {
             <div className={createInvoiceStyles.currencyContainer}>
               <button
                 onClick={() => handleCurrencyChange("INR")}
-                className={`${createInvoiceStyles.currencyButton} ${
-                  invoice.currency === "INR"
+                className={`${createInvoiceStyles.currencyButton} ${invoice.currency === "INR"
                     ? createInvoiceStyles.currencyButtonActive1
                     : createInvoiceStyles.currencyButtonInactive
-                }`}
+                  }`}
               >
                 <span className={createInvoiceCustomStyles.currencySymbol}>
                   ₹
@@ -925,11 +924,10 @@ export default function CreateInvoice() {
 
               <button
                 onClick={() => handleCurrencyChange("USD")}
-                className={`${createInvoiceStyles.currencyButton} ${
-                  invoice.currency === "USD"
+                className={`${createInvoiceStyles.currencyButton} ${invoice.currency === "USD"
                     ? createInvoiceStyles.currencyButtonActive2
                     : createInvoiceStyles.currencyButtonInactive
-                }`}
+                  }`}
               >
                 <span className={createInvoiceCustomStyles.currencySymbol}>
                   $
@@ -957,11 +955,10 @@ export default function CreateInvoice() {
                 <button
                   key={status.value}
                   onClick={() => handleStatusChange(status.value)}
-                  className={`${createInvoiceStyles.statusButton} ${
-                    invoice.status === status.value
+                  className={`${createInvoiceStyles.statusButton} ${invoice.status === status.value
                       ? createInvoiceStyles.statusButtonActive
                       : createInvoiceStyles.statusButtonInactive
-                  }`}
+                    }`}
                 >
                   <StatusBadge
                     status={status.label}
