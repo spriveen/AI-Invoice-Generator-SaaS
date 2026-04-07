@@ -108,7 +108,7 @@ async function tryGenerateWithModel(modelName, prompt) {
   return { text: String(text).trim(), modelName };
 }
 
-aiInvoiceRouter.post('/generte', async (req, res)=>{
+aiInvoiceRouter.post('/generate', async (req, res)=>{
     try {
      if (!API_KEY) {
         return res.status(500).json({
