@@ -5,10 +5,11 @@ import path from "path";
 
 const API_BASE = "http://localhost:4000";
 
-function computeTotals(item = [], taxPercent = 0) {
-  const safe = Array.isArray(item) ? item.filter(Boolean) : [];
+function computeTotals(items = [], taxPercent = 0) {
+  const safe = Array.isArray(items) ? items.filter(Boolean) : [];
   const subtotal = safe.reduce(
-    (s, it) => s + (Number(it.qty || 0) * Number(it.unitPrice || 0)),
+    (sum, item) =>
+      sum + Number(item.qty || 0) * Number(item.unitPrice || 0),
     0
   );
   const tax = (subtotal * Number(taxPercent || 0)) / 100;
@@ -16,10 +17,10 @@ function computeTotals(item = [], taxPercent = 0) {
   return { subtotal, tax, total };
 }
 
-// Parse FormData items
 function parseItemField(val) {
   if (!val) return [];
   if (Array.isArray(val)) return val;
+
   if (typeof val === "string") {
     try {
       return JSON.parse(val);
@@ -27,15 +28,14 @@ function parseItemField(val) {
       return [];
     }
   }
-  return val;
+
+  return [];
 }
 
-// check if string is obj ID
 function isObjectIdString(val) {
   return typeof val === "string" && /^[0-9a-fA-F]{24}$/.test(val);
 }
 
-// upload files → public URL
 function uploadedFilesToUrls(req) {
   const urls = {};
   if (!req.files) return urls;
@@ -54,14 +54,66 @@ function uploadedFilesToUrls(req) {
     if (Array.isArray(arr) && arr[0]) {
       const filename =
         arr[0].filename || (arr[0].path && path.basename(arr[0].path));
-      if (filename) urls[mapping[field]] = `${API_BASE}/uploads/${filename}`;
+      if (filename) {
+        urls[mapping[field]] = `${API_BASE}/uploads/${filename}`;
+      }
     }
   });
 
   return urls;
 }
 
-// generate unique invoice number
+function sanitizeItems(rawItems) {
+  const items = Array.isArray(rawItems) ? rawItems : [];
+
+  return items
+    .map((item, index) => ({
+      id: item?.id ? String(item.id) : String(index + 1),
+      description:
+        typeof item?.description === "string"
+          ? item.description.trim()
+          : "",
+      qty: Number(item?.qty ?? 1),
+      unitPrice: Number(item?.unitPrice ?? 0),
+    }))
+    .filter((item) => item.description.length > 0)
+    .map((item) => ({
+      ...item,
+      qty: Number.isFinite(item.qty) && item.qty > 0 ? item.qty : 1,
+      unitPrice:
+        Number.isFinite(item.unitPrice) && item.unitPrice >= 0
+          ? item.unitPrice
+          : 0,
+    }));
+}
+
+function normalizeClient(clientValue) {
+  if (typeof clientValue === "string" && clientValue.trim()) {
+    return {
+      name: clientValue.trim(),
+      email: "",
+      address: "",
+      phone: "",
+    };
+  }
+
+  if (clientValue && typeof clientValue === "object") {
+    return {
+      name: clientValue.name ? String(clientValue.name).trim() : "",
+      email: clientValue.email ? String(clientValue.email).trim() : "",
+      address: clientValue.address ? String(clientValue.address).trim() : "",
+      phone: clientValue.phone ? String(clientValue.phone).trim() : "",
+    };
+  }
+
+  return {
+    name: "",
+    email: "",
+    address: "",
+    phone: "",
+  };
+}
+
 async function generateUniqueInvoiceNumber(attempts = 8) {
   for (let i = 0; i < attempts; i++) {
     const ts = Date.now().toString();
@@ -73,8 +125,9 @@ async function generateUniqueInvoiceNumber(attempts = 8) {
     const exists = await Invoice.exists({ invoiceNumber: candidate });
     if (!exists) return candidate;
 
-    await new Promise((r) => setTimeout(r, 2));
+    await new Promise((resolve) => setTimeout(resolve, 2));
   }
+
   return new mongoose.Types.ObjectId().toString();
 }
 
@@ -90,9 +143,19 @@ export async function createInvoice(req, res) {
     }
 
     const body = req.body || {};
-    const items = Array.isArray(body.items)
+
+    const parsedItems = Array.isArray(body.items)
       ? body.items
       : parseItemField(body.items);
+
+    const items = sanitizeItems(parsedItems);
+
+    if (!items.length) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one invoice item with a description is required.",
+      });
+    }
 
     const taxPercent = Number(
       body.taxPercent ?? body.tax ?? body.defaultTaxPercent ?? 0
@@ -101,7 +164,7 @@ export async function createInvoice(req, res) {
     const totals = computeTotals(items, taxPercent);
     const fileUrls = uploadedFilesToUrls(req);
 
-    let invoiceNumberProvided =
+    const invoiceNumberProvided =
       typeof body.invoiceNumber === "string" && body.invoiceNumber.trim()
         ? String(body.invoiceNumber).trim()
         : null;
@@ -110,6 +173,7 @@ export async function createInvoice(req, res) {
       const duplicate = await Invoice.exists({
         invoiceNumber: invoiceNumberProvided,
       });
+
       if (duplicate) {
         return res.status(409).json({
           success: false,
@@ -118,7 +182,7 @@ export async function createInvoice(req, res) {
       }
     }
 
-    let invoiceNumber =
+    const invoiceNumber =
       invoiceNumberProvided || (await generateUniqueInvoiceNumber());
 
     const doc = new Invoice({
@@ -132,10 +196,7 @@ export async function createInvoice(req, res) {
       fromAddress: body.fromAddress || "",
       fromPhone: body.fromPhone || "",
       fromGst: body.fromGst || "",
-      client:
-        typeof body.client === "string" && body.client.trim()
-          ? { name: body.client }
-          : body.client || {},
+      client: normalizeClient(body.client),
       items,
       subtotal: totals.subtotal,
       tax: totals.tax,
@@ -196,6 +257,7 @@ export async function createInvoice(req, res) {
     return res.status(500).json({
       success: false,
       message: "Server error",
+      detail: err?.message || String(err),
     });
   }
 }
@@ -226,9 +288,7 @@ export async function getInvoices(req, res) {
       ];
     }
 
-    const invoices = await Invoice.find(q)
-      .sort({ createdAt: -1 })
-      .lean();
+    const invoices = await Invoice.find(q).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       success: true,
@@ -260,11 +320,12 @@ export async function getInvoiceById(req, res) {
     if (isObjectIdString(id)) inv = await Invoice.findById(id);
     else inv = await Invoice.findOne({ invoiceNumber: id });
 
-    if (!inv)
+    if (!inv) {
       return res.status(404).json({
         success: false,
         message: "Invoice not found",
       });
+    }
 
     if (inv.owner && String(inv.owner) !== String(userId)) {
       return res.status(403).json({
@@ -320,6 +381,7 @@ export async function updateInvoice(req, res) {
       const conflict = await Invoice.findOne({
         invoiceNumber: String(body.invoiceNumber).trim(),
       });
+
       if (conflict && String(conflict._id) !== String(existing._id)) {
         return res.status(409).json({
           success: false,
@@ -328,7 +390,21 @@ export async function updateInvoice(req, res) {
       }
     }
 
-    let items = Array.isArray(body.items) ? body.items : [];
+    const parsedItems =
+      body.items !== undefined
+        ? Array.isArray(body.items)
+          ? body.items
+          : parseItemField(body.items)
+        : existing.items;
+
+    const items = sanitizeItems(parsedItems);
+
+    if (!items.length) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one invoice item with a description is required.",
+      });
+    }
 
     const taxPercent = Number(
       body.taxPercent ??
@@ -342,23 +418,53 @@ export async function updateInvoice(req, res) {
     const fileUrls = uploadedFilesToUrls(req);
 
     const update = {
-      ...body,
+      invoiceNumber: body.invoiceNumber
+        ? String(body.invoiceNumber).trim()
+        : existing.invoiceNumber,
+      issueDate: body.issueDate ?? existing.issueDate,
+      dueDate: body.dueDate ?? existing.dueDate,
+      fromBusinessName: body.fromBusinessName ?? existing.fromBusinessName,
+      fromEmail: body.fromEmail ?? existing.fromEmail,
+      fromAddress: body.fromAddress ?? existing.fromAddress,
+      fromPhone: body.fromPhone ?? existing.fromPhone,
+      fromGst: body.fromGst ?? existing.fromGst,
+      client:
+        body.client !== undefined
+          ? normalizeClient(body.client)
+          : existing.client,
       items,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,
+      currency: body.currency ?? existing.currency,
+      status: body.status
+        ? String(body.status).toLowerCase()
+        : existing.status,
       taxPercent,
-      ...fileUrls,
+      logoDataUrl:
+        fileUrls.logoDataUrl ??
+        body.logoDataUrl ??
+        body.logo ??
+        existing.logoDataUrl,
+      stampDataUrl:
+        fileUrls.stampDataUrl ??
+        body.stampDataUrl ??
+        body.stamp ??
+        existing.stampDataUrl,
+      signatureDataUrl:
+        fileUrls.signatureDataUrl ??
+        body.signatureDataUrl ??
+        body.signature ??
+        existing.signatureDataUrl,
+      signatureName: body.signatureName ?? existing.signatureName,
+      signatureTitle: body.signatureTitle ?? existing.signatureTitle,
+      notes: body.notes ?? body.aiSource ?? existing.notes,
     };
-
-    Object.keys(update).forEach(
-      (k) => update[k] === undefined && delete update[k]
-    );
 
     const updated = await Invoice.findByIdAndUpdate(
       existing._id,
       { $set: update },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     return res.status(200).json({
@@ -371,6 +477,7 @@ export async function updateInvoice(req, res) {
     return res.status(500).json({
       success: false,
       message: "Server error",
+      detail: err?.message || String(err),
     });
   }
 }
